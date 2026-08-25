@@ -1,0 +1,6 @@
+.venv/
+__pycache__/
+corpus/primary/
+corpus/secondary/
+corpus/data/
+src/etl/
