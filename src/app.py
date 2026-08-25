@@ -430,3 +430,4 @@ elif app_mode == "词汇统计":
             st.markdown("### 4. KWIC-Index")
             if kwic_records:
                 st.dataframe(pd.DataFrame(kwic_records), width="stretch", height=400)
+                
