@@ -36,6 +36,11 @@ if 'reader_page' not in st.session_state:
 if 'reader_nav' not in st.session_state:
     st.session_state.reader_nav = {'div': 'I', 'vol': 1, 'work': ''}
 
+def switch_to_reader(page_label):
+    st.session_state.reader_mode = 'single_page'
+    st.session_state.reader_page = page_label
+    st.session_state.app_mode = "原文"
+
 @st.cache_data
 def load_global_corrections():
     return sc.load_corrections(sc.CORRECTIONS_FILE)
@@ -228,11 +233,12 @@ if app_mode == "全文搜索":
                     with st.expander(f"SW {row['sw_page_label']}{fn_marker}"):
                         col_btn, col_path = st.columns([1, 4])
                         with col_btn:
-                            if st.button(f"Zum Text", key=f"read_{row['id']}_{index}"):
-                                st.session_state.reader_mode = 'single_page'
-                                st.session_state.reader_page = row['sw_page_label']
-                                st.session_state.app_mode = "原文"
-                                st.rerun()
+                            st.button(
+                                "Zum Text", 
+                                key=f"read_{row['id']}_{index}", 
+                                on_click=switch_to_reader, 
+                                args=(row['sw_page_label'],)
+                            )
                         with col_path:
                             if row.get("work_title"):
                                 st.markdown(f"** {row.get('work_title')}**")
@@ -430,4 +436,3 @@ elif app_mode == "词汇统计":
             st.markdown("### 4. KWIC-Index")
             if kwic_records:
                 st.dataframe(pd.DataFrame(kwic_records), width="stretch", height=400)
-                
