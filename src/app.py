@@ -28,7 +28,7 @@ hide_st_style = """
 st.markdown(hide_st_style, unsafe_allow_html=True)
 
 if 'app_mode' not in st.session_state:
-    st.session_state.app_mode = "全文检索 (Volltextsuche)"
+    st.session_state.app_mode = "全文搜索"
 if 'reader_mode' not in st.session_state:
     st.session_state.reader_mode = 'single_page'
 if 'reader_page' not in st.session_state:
@@ -225,7 +225,7 @@ if app_mode == "全文搜索":
                 st.success(f"Gefunden: {len(results)}.")
                 for index, row in enumerate(results):
                     fn_marker = f" *(Fußnote {row.get('footnote_number', '')})*" if row.get('footnote_number') else ""
-                    with st.expander(f"SW {row['sw_page_label']}{fn_marker} (PDF: {row['pdf_pages']})"):
+                    with st.expander(f"SW {row['sw_page_label']}{fn_marker}"):
                         col_btn, col_path = st.columns([1, 4])
                         with col_btn:
                             if st.button(f"Zum Text", key=f"read_{row['id']}_{index}"):
@@ -306,7 +306,7 @@ elif app_mode == "原文":
                     st.warning(f"Nicht gefunden: {page_label}")
                 else:
                     if page.get("work_title"):
-                        st.markdown(f"**📍 {page.get('work_title')}**")
+                        st.markdown(f"** {page.get('work_title')}**")
                     render_page_block(page, fns, show_raw)
                             
             elif mode == 'continuous':

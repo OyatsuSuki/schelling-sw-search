@@ -253,7 +253,7 @@ def search_database(database_path, query_info, options):
     FROM pages_fts
     JOIN pages ON pages.rowid = pages_fts.rowid
     WHERE {where_clause}
-    ORDER BY rank
+    ORDER BY pages.rowid ASC
     """
     if options["limit"] > 0:
         sql += " LIMIT ?"
@@ -308,6 +308,10 @@ def search_database(database_path, query_info, options):
             cursor.execute(fn_sql, fn_params)
             fn_results = [dict(r) for r in cursor.fetchall()]
             results.extend(fn_results)
+            
+            results.sort(key=lambda x: (x["id"], int(x["footnote_number"]) if x["footnote_number"] else 0))
+            if options["limit"] > 0:
+                results = results[:options["limit"]]
 
     connection.close()
     return results
