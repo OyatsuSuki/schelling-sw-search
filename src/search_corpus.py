@@ -244,6 +244,9 @@ def search_database(database_path, query_info, options):
     sql = f"""
     SELECT
         pages.id,
+        pages.division,
+        pages.volume,
+        pages.sw_page,
         pages.sw_page_label,
         pages.pdf_pages,
         pages.body,
@@ -253,12 +256,7 @@ def search_database(database_path, query_info, options):
     FROM pages_fts
     JOIN pages ON pages.rowid = pages_fts.rowid
     WHERE {where_clause}
-    ORDER BY pages.rowid ASC
     """
-    if options["limit"] > 0:
-        sql += " LIMIT ?"
-        params.append(options["limit"])
-
     cursor.execute(sql, params)
     results = [dict(r) for r in cursor.fetchall()]
 
@@ -291,6 +289,9 @@ def search_database(database_path, query_info, options):
             fn_sql = f"""
             SELECT
                 pages.id,
+                pages.division,
+                pages.volume,
+                pages.sw_page,
                 pages.sw_page_label,
                 pages.pdf_pages,
                 footnotes.text AS body,
@@ -301,19 +302,29 @@ def search_database(database_path, query_info, options):
             JOIN pages ON pages.id = footnotes.page_id
             WHERE {fn_where}
             """
-            if options["limit"] > 0:
-                fn_sql += " LIMIT ?"
-                fn_params.append(options["limit"])
-
             cursor.execute(fn_sql, fn_params)
             fn_results = [dict(r) for r in cursor.fetchall()]
             results.extend(fn_results)
             
-            results.sort(key=lambda x: (x["id"], int(x["footnote_number"]) if x["footnote_number"] else 0))
-            if options["limit"] > 0:
-                results = results[:options["limit"]]
-
     connection.close()
+
+    def sw_sort_key(x):
+        div_weight = 1 if x["division"] == "I" else 2
+        vol = int(x["volume"])
+        page = int(x["sw_page"])
+        
+        fn_weight = 0
+        if x["footnote_number"]:
+            match = re.search(r'\d+', str(x["footnote_number"]))
+            fn_weight = int(match.group()) if match else 999
+            
+        return (div_weight, vol, page, fn_weight)
+
+    results.sort(key=sw_sort_key)
+    
+    if options["limit"] > 0:
+        results = results[:options["limit"]]
+
     return results
 
 def print_results(results, query_info, options, corrections):
