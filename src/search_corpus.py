@@ -63,7 +63,6 @@ def load_corrections(filepath):
             data = json.load(f)
             return {k: v.get("correction", k) for k, v in data.items()}
     except Exception as e:
-        print(f"Error loading corrections: {e}")
         return {}
 
 def apply_corrections(text, corrections):
@@ -117,35 +116,13 @@ def parse_query(parts):
 def query_search_targets(query_info):
     targets = []
     for phrase in query_info["phrases"]:
-        if phrase:
-            targets.append(phrase)
+        if phrase: targets.append(phrase)
     for term in query_info["terms"]:
-        if term:
-            targets.append(term)
+        if term: targets.append(term)
     return targets
 
 def clean_whitespace(text):
     return re.sub(r"\s+", " ", text).strip()
-
-def find_best_match(text, targets):
-    best_match = None
-    for target in targets:
-        if not target:
-            continue
-        match = re.search(re.escape(target), text, flags=re.IGNORECASE)
-        if not match:
-            continue
-        if best_match is None:
-            best_match = match
-            continue
-        if match.start() < best_match.start():
-            best_match = match
-        elif (match.start() == best_match.start() and 
-              match.end() - match.start() > best_match.end() - best_match.start()):
-            best_match = match
-    if best_match is None:
-        return None
-    return (best_match.start(), best_match.end())
 
 def make_snippet(text, query_info, context_width):
     text = clean_whitespace(text)
@@ -155,19 +132,39 @@ def make_snippet(text, query_info, context_width):
     if not targets:
         return text[:context_width]
     
-    match = find_best_match(text, targets)
-    if match is None:
+    matches = []
+    for target in targets:
+        if not target: continue
+        for m in re.finditer(re.escape(target), text, flags=re.IGNORECASE):
+            matches.append((m.start(), m.end(), target.lower()))
+    
+    if not matches:
         return text[:context_width]
         
-    match_start, match_end = match
+    best_start = 0
+    best_end = context_width
+    max_unique = 0
     half_width = context_width // 2
-    start = max(0, match_start - half_width)
-    end = min(len(text), match_end + half_width)
     
-    snippet = text[start:end]
-    if start > 0:
+    # 智能扫描全页，寻找关键词最密集的截取窗口
+    for m_start, m_end, t_val in matches:
+        win_start = max(0, m_start - half_width)
+        win_end = min(len(text), m_start + half_width)
+        
+        unique_targets = set()
+        for om_start, om_end, ot_val in matches:
+            if om_start >= win_start and om_end <= win_end:
+                unique_targets.add(ot_val)
+                
+        if len(unique_targets) > max_unique:
+            max_unique = len(unique_targets)
+            best_start = win_start
+            best_end = win_end
+            
+    snippet = text[best_start:best_end]
+    if best_start > 0:
         snippet = "... " + snippet
-    if end < len(text):
+    if best_end < len(text):
         snippet = snippet + " ..."
     return snippet
 
@@ -282,12 +279,10 @@ def search_database(database_path, query_info, options):
         div_weight = 1 if x["division"] == "I" else 2
         vol = int(x["volume"])
         page = int(x["sw_page"])
-        
         fn_weight = 0
         if x["footnote_number"]:
             match = re.search(r'\d+', str(x["footnote_number"]))
             fn_weight = int(match.group()) if match else 999
-            
         return (div_weight, vol, page, fn_weight)
 
     results.sort(key=sw_sort_key)
@@ -297,20 +292,8 @@ def search_database(database_path, query_info, options):
 
     return results
 
-def print_results(results, query_info, options, corrections):
-    print("=" * 80)
-    print(f"SEARCH QUERY: {query_info['display']}")
-    print(f"RESULTS RETURNED: {len(results)}")
-    print("=" * 80)
-    if not results: return
-    for index, row in enumerate(results, start=1):
-        print(f"\n[{index}] SW {row['sw_page_label']}")
-        body_text = apply_corrections(row["body"], corrections)
-        print(make_snippet(body_text, query_info, options["context"]))
-
 def main():
     pass
 
 if __name__ == "__main__":
     main()
-    
