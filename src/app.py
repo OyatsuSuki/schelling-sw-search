@@ -7,8 +7,8 @@ from collections import Counter, defaultdict
 import pandas as pd
 import streamlit as st
 
-from src import search_corpus as sc
-from src import show_page as sp
+import search_corpus as sc
+import show_page as sp
 
 st.set_page_config(page_title="Schelling Sämmtliche Werke", layout="wide", initial_sidebar_state="expanded")
 
