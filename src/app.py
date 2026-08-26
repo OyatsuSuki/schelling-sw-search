@@ -219,11 +219,10 @@ if app_mode == "全文搜索":
         query_parts, options = sc.parse_args(args)
         query_info = sc.parse_query(query_parts)
         
-        if query_info and use_lemma:
-            query_info["fts"] = f"body_lemma:({query_info['fts']})"
-            query_info["terms"] = [query_str]
-        
         if query_info:
+            if not use_lemma:
+                query_info["fts"] = f"body:({query_info['fts']})"
+            
             try:
                 results = sc.search_database(sc.DEFAULT_DATABASE, query_info, options)
                 st.success(f"Gefunden: {len(results)}.")

@@ -82,8 +82,9 @@ def parse_query(parts):
     if not raw_query:
         return None
 
-    phrases = []
+    raw_query = re.sub(r'[“”„«»]', '"', raw_query)
 
+    phrases = []
     def extract_phrase(match):
         phrase = match.group(1).strip()
         if phrase:
@@ -91,7 +92,6 @@ def parse_query(parts):
         return " "
 
     remaining = re.sub(r'"([^"]+)"', extract_phrase, raw_query)
-    
     terms = [t.strip() for t in re.findall(r"\S+", remaining) if t.strip()]
 
     fts_parts = []
