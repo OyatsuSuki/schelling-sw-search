@@ -136,37 +136,39 @@ def make_snippet(text, query_info, context_width):
     for target in targets:
         if not target: continue
         for m in re.finditer(re.escape(target), text, flags=re.IGNORECASE):
-            matches.append((m.start(), m.end(), target.lower()))
+            matches.append((m.start(), m.end()))
     
     if not matches:
         return text[:context_width]
         
-    best_start = 0
-    best_end = context_width
-    max_unique = 0
+    matches.sort(key=lambda x: x[0])
     half_width = context_width // 2
     
-    # 智能扫描全页，寻找关键词最密集的截取窗口
-    for m_start, m_end, t_val in matches:
-        win_start = max(0, m_start - half_width)
-        win_end = min(len(text), m_start + half_width)
+    windows = []
+    for start, end in matches:
+        windows.append([max(0, start - half_width), min(len(text), end + half_width)])
         
-        unique_targets = set()
-        for om_start, om_end, ot_val in matches:
-            if om_start >= win_start and om_end <= win_end:
-                unique_targets.add(ot_val)
+    merged = []
+    for w in windows:
+        if not merged:
+            merged.append(w)
+        else:
+            last = merged[-1]
+            if w[0] <= last[1] + 20:
+                last[1] = max(last[1], w[1])
+            else:
+                merged.append(w)
                 
-        if len(unique_targets) > max_unique:
-            max_unique = len(unique_targets)
-            best_start = win_start
-            best_end = win_end
-            
-    snippet = text[best_start:best_end]
-    if best_start > 0:
-        snippet = "... " + snippet
-    if best_end < len(text):
-        snippet = snippet + " ..."
-    return snippet
+    snippets = []
+    for w_start, w_end in merged:
+        segment = text[w_start:w_end]
+        if w_start > 0 and not segment.startswith("..."):
+            segment = "..." + segment
+        if w_end < len(text) and not segment.endswith("..."):
+            segment = segment + "..."
+        snippets.append(segment.strip())
+        
+    return " ".join(snippets)
 
 def search_database(database_path, query_info, options):
     database_path = Path(database_path)

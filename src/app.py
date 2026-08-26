@@ -222,13 +222,29 @@ if app_mode == "全文搜索":
         if query_info:
             if not use_lemma:
                 query_info["fts"] = f"body:({query_info['fts']})"
-            
+                
             try:
                 results = sc.search_database(sc.DEFAULT_DATABASE, query_info, options)
-                st.success(f"Gefunden: {len(results)}.")
+                
+                total_hits = 0
+                targets = sc.query_search_targets(query_info)
+                for row in results:
+                    body_text = row["body"] if show_raw else sc.apply_corrections(row["body"], corrections)
+                    for target in targets:
+                        total_hits += len(re.findall(re.escape(target), body_text, flags=re.IGNORECASE))
+                
+                st.success(f"Gefunden: {total_hits} Treffer auf {len(results)} Seiten.")
+                
                 for index, row in enumerate(results):
+                    page_hits = 0
+                    body_text = row["body"] if show_raw else sc.apply_corrections(row["body"], corrections)
+                    for target in targets:
+                        page_hits += len(re.findall(re.escape(target), body_text, flags=re.IGNORECASE))
+                        
                     fn_marker = f" *(Fußnote {row.get('footnote_number', '')})*" if row.get('footnote_number') else ""
-                    with st.expander(f"SW {row['sw_page_label']}{fn_marker}"):
+                    hit_marker = f" ({page_hits} Treffer)" if page_hits > 0 else ""
+                    
+                    with st.expander(f"SW {row['sw_page_label']}{fn_marker}{hit_marker}"):
                         col_btn, col_path = st.columns([1, 4])
                         with col_btn:
                             st.button(
@@ -242,9 +258,8 @@ if app_mode == "全文搜索":
                                 st.markdown(f"** {row.get('work_title')}**")
                                 
                         st.markdown("---")
-                        body_text = row["body"] if show_raw else sc.apply_corrections(row["body"], corrections)
                         snippet = sc.make_snippet(body_text, query_info, options["context"])
-                        for target in sc.query_search_targets(query_info):
+                        for target in targets:
                             snippet = re.sub(f"({re.escape(target)})", r"**\1**", snippet, flags=re.IGNORECASE)
                         st.markdown(snippet)
             except Exception as e:
