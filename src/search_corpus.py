@@ -78,42 +78,10 @@ def parse_query(parts):
     if not parts:
         return None
 
-    if len(parts) == 1:
-        raw = parts[0].strip()
-        if not raw:
-            return None
-
-        if len(raw) >= 2 and raw.startswith('"') and raw.endswith('"'):
-            phrase = raw[1:-1].strip()
-            if not phrase:
-                return None
-            escaped = phrase.replace('"', '""')
-            return {
-                "display": phrase,
-                "fts": f'"{escaped}"',
-                "terms": [],
-                "phrases": [phrase],
-            }
-
-        if re.search(r"\s", raw):
-            phrase = raw
-            escaped = phrase.replace('"', '""')
-            return {
-                "display": phrase,
-                "fts": f'"{escaped}"',
-                "terms": [],
-                "phrases": [phrase],
-            }
-
-        escaped = raw.replace('"', '""')
-        return {
-            "display": raw,
-            "fts": f'"{escaped}"',
-            "terms": [raw],
-            "phrases": [],
-        }
-
     raw_query = " ".join(parts).strip()
+    if not raw_query:
+        return None
+
     phrases = []
 
     def extract_phrase(match):
@@ -123,6 +91,7 @@ def parse_query(parts):
         return " "
 
     remaining = re.sub(r'"([^"]+)"', extract_phrase, raw_query)
+    
     terms = [t.strip() for t in re.findall(r"\S+", remaining) if t.strip()]
 
     fts_parts = []
@@ -137,6 +106,7 @@ def parse_query(parts):
         return None
 
     fts_query = " AND ".join(fts_parts)
+    
     return {
         "display": raw_query,
         "fts": fts_query,
