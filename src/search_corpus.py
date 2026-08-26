@@ -142,6 +142,7 @@ def make_snippet(text, query_info, context_width):
         return text[:context_width]
         
     matches.sort(key=lambda x: x[0])
+    
     half_width = context_width // 2
     
     windows = []
@@ -154,21 +155,21 @@ def make_snippet(text, query_info, context_width):
             merged.append(w)
         else:
             last = merged[-1]
-            if w[0] <= last[1] + 20:
+            if w[0] <= last[1] + 20: 
                 last[1] = max(last[1], w[1])
             else:
                 merged.append(w)
-                
+
     snippets = []
     for w_start, w_end in merged:
         segment = text[w_start:w_end]
-        if w_start > 0 and not segment.startswith("..."):
-            segment = "..." + segment
-        if w_end < len(text) and not segment.endswith("..."):
-            segment = segment + "..."
-        snippets.append(segment.strip())
+        if w_start > 0:
+            segment = "... " + segment.lstrip()
+        if w_end < len(text):
+            segment = segment.rstrip() + " ..."
+        snippets.append(segment)
         
-    return " ".join(snippets)
+    return "  \n\n**[ ... ]**  \n\n".join(snippets)
 
 def search_database(database_path, query_info, options):
     database_path = Path(database_path)
