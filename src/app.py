@@ -7,9 +7,8 @@ from collections import Counter, defaultdict
 import pandas as pd
 import streamlit as st
 
-sys.path.append(str(Path(__file__).parent))
-import search_corpus as sc
-import show_page as sp
+from src import search_corpus as sc
+from src import show_page as sp
 
 st.set_page_config(page_title="Schelling Sämmtliche Werke", layout="wide", initial_sidebar_state="expanded")
 
@@ -210,10 +209,7 @@ if app_mode == "全文搜索":
 
     if st.button("搜索", type="primary"):
         args = []
-        if use_lemma and '"' not in query_str and ' ' not in query_str:
-            args.append(f"body_lemma:{query_str}")
-        else:
-            args.append(query_str)
+        args.append(query_str)
 
         if work_filter: args.extend(["--work", work_filter])
         if vol_filter: args.extend(["--volume", vol_filter])
@@ -222,7 +218,10 @@ if app_mode == "全文搜索":
             
         query_parts, options = sc.parse_args(args)
         query_info = sc.parse_query(query_parts)
-        if use_lemma and query_info: query_info["terms"] = [query_str]
+        
+        if query_info and use_lemma:
+            query_info["fts"] = f"body_lemma:({query_info['fts']})"
+            query_info["terms"] = [query_str]
         
         if query_info:
             try:
