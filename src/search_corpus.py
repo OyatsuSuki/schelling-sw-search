@@ -124,7 +124,7 @@ def query_search_targets(query_info):
 def clean_whitespace(text):
     return re.sub(r"\s+", " ", text).strip()
 
-def make_snippet(text, query_info, context_width):
+def make_snippet_v2(text, query_info, context_width):
     text = clean_whitespace(text)
     if not text:
         return ""
@@ -155,11 +155,11 @@ def make_snippet(text, query_info, context_width):
             merged.append(w)
         else:
             last = merged[-1]
-            if w[0] <= last[1] + 20: 
+            if w[0] <= last[1] + 40: 
                 last[1] = max(last[1], w[1])
             else:
                 merged.append(w)
-
+                
     snippets = []
     for w_start, w_end in merged:
         segment = text[w_start:w_end]

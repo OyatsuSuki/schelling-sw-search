@@ -258,7 +258,7 @@ if app_mode == "全文搜索":
                                 st.markdown(f"** {row.get('work_title')}**")
                                 
                         st.markdown("---")
-                        snippet = sc.make_snippet(body_text, query_info, options["context"])
+                        snippet = sc.make_snippet_v2(body_text, query_info, options["context"])
                         for target in targets:
                             snippet = re.sub(f"({re.escape(target)})", r"**\1**", snippet, flags=re.IGNORECASE)
                         st.markdown(snippet)
